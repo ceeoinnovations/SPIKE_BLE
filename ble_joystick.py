@@ -2,7 +2,6 @@
 
 import bluetooth
 import ble_CBR
-import struct
 import time
 
 def Joy():

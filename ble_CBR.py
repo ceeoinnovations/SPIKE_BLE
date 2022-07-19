@@ -66,10 +66,12 @@ class BLESimplePeripheral:
         if self.type == 'UART':
             ((self._handle_tx, self._handle_rx),) = self._ble.gatts_register_services((_UART_SERVICE,))
             services = [_UART_UUID]
+            print('setup as uart')
         else:
             ((self._handle_tx, ),) = self._ble.gatts_register_services((_MIDI_SERVICE,))
             self._handle_rx = self._handle_tx   # same handle for both directions
             services = [_MIDI_UUID]
+            print('setup as midi')
         self._connections = set()
         self._write_callback = None
         self._payload = advertising_payload(name=name, services=services)
@@ -110,8 +112,8 @@ class BLESimplePeripheral:
 
 #------------------------------------Central-------------------------------
 
-class BLESimpleCentral:
-    def __init__(self, ble):
+class BLESimpleCentral:     #only for UART - all midi is peripheral
+    def __init__(self, ble): 
         self._ble = ble
         self._ble.active(True)
         self._ble.irq(self._irq)
