@@ -3,5 +3,5 @@
 
 
 Instructions
-1. you will need to load ble_advertising.py and ble_CBR.py to your SPIKE Prime
-2. run Piano to control GarageBand
+1. you will need to load  all the files in the folder LoadOnSPIKE to your SPIKE Prime
+2. try running the example in the REPL
