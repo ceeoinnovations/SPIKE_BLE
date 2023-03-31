@@ -111,9 +111,8 @@ class BLESimplePeripheral:
         self._write_callback = callback
         
     def disconnect(self):
-        if not self._conn_handle:
-            return
-        self._ble.gap_disconnect(self._conn_handle)
+        for conn_handle in self._connections:
+            self._ble.gap_disconnect(conn_handle)
 
 #------------------------------------Central-------------------------------
 
