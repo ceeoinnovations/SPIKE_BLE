@@ -109,6 +109,11 @@ class BLESimplePeripheral:
 
     def on_write(self, callback):
         self._write_callback = callback
+        
+    def disconnect(self):
+        if not self._conn_handle:
+            return
+        self._ble.gap_disconnect(self._conn_handle)
 
 #------------------------------------Central-------------------------------
 
@@ -254,4 +259,3 @@ class BLESimpleCentral:     #only for UART - all midi is peripheral
     # Set handler for when data is received over the UART.
     def on_notify(self, callback):
         self._notify_callback = callback
-        
