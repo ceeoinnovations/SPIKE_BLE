@@ -51,39 +51,80 @@ class MIDI_Player:
             return True
         return False
         
-    def sendPackage(self, cmd, values, channel):
+    def fit(self, x):
+        return (0 if x < 0 else 127 if x > 127 else x)
+        
+    def sendPackage(self, cmd, notes, channel, verbose = False):
         channel = 0x0F & channel
         timestamp_ms = time.ticks_ms()
         tsM = (timestamp_ms >> 7 & 0b111111) | 0x80
         tsL =  0x80 | (timestamp_ms & 0b1111111)
         c =  cmd | channel
-        payload = struct.pack('bbb',tsM,tsL,c)  
-        for value in values:    
-            payload += struct.pack('b',value)
+        payload = struct.pack('bb',tsM,tsL)
+        for note in notes:
+            payload += struct.pack('b',c)
+            for n in list(note):  # note should be a tuple
+                payload += struct.pack('b',self.fit(n))  # some commands are 1 byte, others 2
+        if verbose:
+            print([hex(i) for i in payload])
         return self.send(payload)
 
     def instrument(self, value = 57, channel = 0):
-        self.sendPackage(SetInstroment, [value], channel)
+        self.sendPackage(SetInstroment, [(value,),], channel)
         
     def disconnect(self):
         self.p.disconnect()
         
 class MIDI_Instrument:
-    def __init__(self, midi, number=0, channel=0):
+    def __init__(self, midi, number=0, channel=0, verbose = False):
         self.midi = midi
         self.number = number
         self.channel = channel
-        self.lastNote = 0
+        self.noteHistory = []
         self.volume = 0
+        self.verbose = verbose
         self.midi.instrument(number,channel)
         
     def on(self, note, vel = velocity['f']):
-        self.midi.sendPackage(NoteOn, [note, vel], self.channel)
-        self.lastNote = note
+        if type(note) == list:
+            self.chord(note,vel)
+        else:
+            self.midi.sendPackage(NoteOn, [(note, vel),], self.channel, self.verbose)
+            self.noteHistory.append(note)
         
-    def off(self, note, vel = velocity['off']):
-        self.midi.sendPackage(NoteOff, [note, vel], self.channel)
-        self.lastNote = 0
-        
+    def chord(self, notes, vels = None):
+        if vels:
+            if type(vels) == list:
+                c = list(zip(notes,vels))
+            else:
+                c = [(note,vels) for note in notes]
+        else:
+            c = [(note,velocity['f']) for note in notes]
+        if self.verbose:
+            print(c)
+        self.midi.sendPackage(NoteOn, c, self.channel, self.verbose)
+        self.noteHistory.extend(notes)
+
+    def _off(self, note, vel):
+        self.midi.sendPackage(NoteOff, [(note, vel),], self.channel, self.verbose)
+        if note in self.noteHistory:
+            self.noteHistory.reverse()
+            self.noteHistory.pop(self.noteHistory.index(note))
+            self.noteHistory.reverse()  
+            if self.verbose:
+                print('deleted %d'%note)
+    
+    def off(self, note = None , vel = velocity['off']):
+        if note:
+            if type(note) == list:
+                for n in note:
+                    self._off(n, vel)
+            else:
+                self._off(note, vel)
+        else:
+            temp = self.noteHistory * 1 # force memory reallocation
+            for n in temp:
+                self._off(n, vel)
+            
     def Stop(self):
-        self.sendPackage(StopNotes, [], self.channel)
+        self.midi.sendPackage(StopNotes, [], self.channel, self.verbose)

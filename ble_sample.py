@@ -21,6 +21,14 @@ def Music():
                 Trumpet.off(x)
                 Piano.off(x)
                 time.sleep(0.5)
+                Piano.on([54,33,x],velocity['f'])
+                time.sleep(0.5)
+                Piano.off([54,33,x])
+                time.sleep(0.5)
+                Piano.on([54, 58, 60])
+                time.sleep(0.5)
+                Piano.off()
+                time.sleep(0.5)
     except:
         pass
         
